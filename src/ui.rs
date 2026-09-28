@@ -58,18 +58,16 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(25), // Logo y versión
-            Constraint::Min(45),    // Pestañas
-            Constraint::Length(38), // Estado de repo / upstream
+            Constraint::Length(16), // Logo compacto: " GV VANGUARD "
+            Constraint::Min(40),    // Pestañas (reciben todo el ancho disponible)
+            Constraint::Length(28), // Estado de repo / upstream compacto
         ])
         .split(area);
 
     // Bloque 1: Brand / Logo
     let brand_spans = vec![
         Span::styled(" GV ", Style::default().bg(Palette::ACCENT).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD)),
-        Span::styled(" GIT", Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
-        Span::styled("VANGUARD ", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
-        Span::styled("v0.1 ", Style::default().fg(Palette::MUTED)),
+        Span::styled(" VANGUARD", Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
     ];
     let brand = Paragraph::new(Line::from(brand_spans))
         .block(
@@ -81,15 +79,52 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
         );
     f.render_widget(brand, header_chunks[0]);
 
-    // Bloque 2: Tabs horizontales con Badge de Alto Contraste
+    // Bloque 2: Tabs horizontales con ventana deslizante (Garantiza visibilidad en cualquier resolución)
+    let inner_width = header_chunks[1].width.saturating_sub(4) as usize;
+    let active_idx = app.active_tab.to_index();
+
+    let tab_items = [
+        (0, " 1. Archivos "),
+        (1, " 2. Ramas "),
+        (2, " 3. Historial "),
+        (3, " 4. Worktrees "),
+        (4, " 5. Stash "),
+        (5, " 6. Reflog "),
+    ];
+
+    let total_len: usize = tab_items.iter().map(|(_, t)| t.len()).sum::<usize>() + (tab_items.len() - 1);
+
+    let (start_idx, end_idx) = if total_len <= inner_width {
+        (0, 6)
+    } else {
+        let mut best_start = 0;
+        let mut best_end = 6;
+        for s in 0..6 {
+            for e in (s + 1)..=6 {
+                if s <= active_idx && active_idx < e {
+                    let sub_len = tab_items[s..e].iter().map(|(_, t)| t.len()).sum::<usize>() + (e - s - 1);
+                    if sub_len <= inner_width && (e - s > best_end - best_start || (best_end == 6 && best_start == 0)) {
+                        best_start = s;
+                        best_end = e;
+                    }
+                }
+            }
+        }
+        (best_start, best_end)
+    };
+
     let mut tab_spans = Vec::new();
-    for i in 0..6 {
+    if start_idx > 0 {
+        tab_spans.push(Span::styled("◀ ", Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD)));
+    }
+
+    for (pos, i) in (start_idx..end_idx).enumerate() {
         let tab = Tab::from_index(i);
-        let is_active = app.active_tab == tab;
+        let is_active = i == active_idx;
 
         if is_active {
             tab_spans.push(Span::styled(
-                format!(" {} ", tab.title()),
+                format!(" {} ", tab.short_title()),
                 Style::default()
                     .bg(Palette::ACCENT)
                     .fg(Color::Rgb(15, 23, 42))
@@ -97,17 +132,23 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
             ));
         } else {
             tab_spans.push(Span::styled(
-                format!(" {} ", tab.title()),
+                format!(" {} ", tab.short_title()),
                 Style::default()
                     .bg(Color::Rgb(24, 32, 47))
                     .fg(Palette::TEXT_DIM),
             ));
         }
 
-        if i < 5 {
+        if pos + 1 < (end_idx - start_idx) {
             tab_spans.push(Span::raw(" "));
         }
     }
+
+    if end_idx < 6 {
+        tab_spans.push(Span::styled(" ▶", Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD)));
+    }
+
+    let tabs_title = format!(" Pestaña [{}/6: {}] ", active_idx + 1, app.active_tab.short_title());
     let tabs_widget = Paragraph::new(Line::from(tab_spans))
         .alignment(Alignment::Center)
         .block(
@@ -115,29 +156,28 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
-                .title(format!(" Pestaña Activa: [{}] (Tab o 1-6 para alternar) ", app.active_tab.title())),
+                .title(tabs_title),
         );
     f.render_widget(tabs_widget, header_chunks[1]);
 
     // Bloque 3: Resumen de Sincronización Remota
     let branch_name = &app.overview.branch;
-    let sync_info = if let Some(ref ups) = app.overview.upstream {
-        format!("{} ↑{} ↓{}", ups, app.overview.ahead, app.overview.behind)
+    let sync_info = if let Some(ref _ups) = app.overview.upstream {
+        format!("↑{} ↓{}", app.overview.ahead, app.overview.behind)
     } else {
         "local".to_string()
     };
 
     let status_badge = if app.overview.is_clean {
-        Span::styled(" LIMPIO ", Style::default().bg(Palette::SUCCESS).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
+        Span::styled(" OK ", Style::default().bg(Palette::SUCCESS).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
     } else {
-        Span::styled(" CAMBIOS ", Style::default().bg(Palette::WARNING).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
+        Span::styled(" MOD ", Style::default().bg(Palette::WARNING).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
     };
 
     let sync_spans = vec![
-        Span::raw(" "),
         status_badge,
         Span::styled(format!(" * {} ", branch_name), Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
-        Span::styled(format!("({}) ", sync_info), Style::default().fg(Palette::MUTED)),
+        Span::styled(format!("({})", sync_info), Style::default().fg(Palette::MUTED)),
     ];
     let sync_widget = Paragraph::new(Line::from(sync_spans))
         .alignment(Alignment::Right)

@@ -11,17 +11,18 @@ Diseñado desde cero para ofrecer una velocidad de renderizado implacable (<5 ms
 
 ```
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ GITVANGUARD v0.1   │ 1. Archivos │ 2. Ramas │ 3. Historial │ 4. Worktrees │ 5. Stash │ 6. Time Machine │
+│ GITVANGUARD v0.1 │ [1. Archivos] │ 2. Ramas │ 3. Historial │ 4. Worktrees │ 5. Stash │ 6. Time Machine │
 ├──────────────────────────────────────────┬─────────────────────────────────────────────────────────────┤
-│ Cambios de Trabajo [Unstaged: 2]         │ Inspección de Diferencias                                   │
-│ ▶ [M] src/main.rs                        │    1 │ diff --git a/src/main.rs b/src/main.rs                  │
-│   [?] config/secrets.env                 │    2 │ --- a/src/main.rs                                       │
-│                                          │    3 │ +++ b/src/main.rs                                       │
-├──────────────────────────────────────────┤    4 │ @@ -24,4 +24,8 @@                                       │
-│ Cambios Preparados [Staged: 1]           │    5 │ +// Sentinel Shield: prevención activa de fugas         │
-│   [M] src/sentinel.rs                    │    6 │ +pub fn scan_diff(diff: &str) -> Vec<SecretFinding>     │
+│ Cambios de Trabajo [Unstaged: 2]         │ Inspección de Diferencias (Diff)                            │
+│ * [M] src/main.rs                        │    1 │ diff --git a/src/main.rs b/src/main.rs               │
+│   [?] .env.local                         │    2 │ --- a/src/main.rs                                    │
+│                                          │    3 │ +++ b/src/main.rs                                    │
+├──────────────────────────────────────────┤    4 │ @@ -45,3 +45,9 @@                                    │
+│ Cambios Preparados [Staged: 1]           │    5 │ // Sentinel Shield: verificación activa              │
+│ * [M] src/sentinel.rs                    │    6 │ +pub fn scan_diff(diff: &str) -> Vec<Finding>        │
+│                                          │    7 │ +    let compiled = get_compiled_rules();            │
 ╰──────────────────────────────────────────┴─────────────────────────────────────────────────────────────╯
-  Tab: Cambiar Panel │ Space: Stage/Checkout │ c: Commit │ C: Conv. Commit │ U: Undo Reflog │ q: Salir
+  Tab: Pestaña │ Space: Stage/Checkout │ c: Commit │ C: Conv. Commit │ U: Rebobinar │ q: Salir
 ```
 
 ---

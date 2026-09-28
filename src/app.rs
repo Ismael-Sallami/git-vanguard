@@ -38,6 +38,7 @@ impl Tab {
         self as usize
     }
 
+    #[allow(dead_code)]
     pub fn title(self) -> &'static str {
         match self {
             Tab::Files => "1. Archivos (Staging)",
@@ -45,6 +46,17 @@ impl Tab {
             Tab::Commits => "3. Historial (DAG)",
             Tab::Worktrees => "4. Worktrees Hub",
             Tab::Stashes => "5. Stash & Shelves",
+            Tab::TimeMachine => "6. Time Machine",
+        }
+    }
+
+    pub fn short_title(self) -> &'static str {
+        match self {
+            Tab::Files => "1. Archivos",
+            Tab::Branches => "2. Ramas",
+            Tab::Commits => "3. Historial",
+            Tab::Worktrees => "4. Worktrees",
+            Tab::Stashes => "5. Stash",
             Tab::TimeMachine => "6. Time Machine",
         }
     }
