@@ -7,7 +7,7 @@
 
 **GitVanguard** (`vanguard` o alias `gv`) es un controlador de Git en terminal (TUI) de alto rendimiento, desarrollado desde cero en **Rust** exclusivamente para entornos **Linux**. 
 
-Nace con el propósito de resolver las limitaciones estructurales de herramientas como *Lazygit* y *GitUI*, combinando una velocidad de renderizado implacable (<5 ms por frame, sin recolección de basura de Go) con capacidades de última generación: **Time Machine** para navegación visual y restauración del `reflog`, el escudo de seguridad proactivo **Sentinel Shield** contra fugas accidentales de secretos, un asistente integrado de **Conventional Commits** y un centro de mando nativo para **Git Worktrees**.
+Diseñado desde cero para ofrecer una velocidad de renderizado implacable (<5 ms por frame, sin sobrecargas de recolección de basura) y una suite completa de capacidades avanzadas: **Time Machine** para navegación visual y restauración instantánea del `reflog`, el escudo de seguridad proactivo **Sentinel Shield** contra fugas accidentales de secretos, un asistente integrado de **Conventional Commits** y un centro de mando nativo para **Git Worktrees**.
 
 ```
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────╮
