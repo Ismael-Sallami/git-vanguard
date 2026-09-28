@@ -407,16 +407,38 @@ fn handle_key_event(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
                 app.files_in_staged_view = true;
                 app.update_current_diff();
             }
+            KeyCode::Char('w') if app.active_tab == Tab::Files => {
+                app.files_in_staged_view = !app.files_in_staged_view;
+                app.update_current_diff();
+            }
 
             // Staging individual o cambio de rama
             KeyCode::Char(' ') => match app.active_tab {
                 Tab::Files => app.toggle_stage_current(),
                 Tab::Branches => app.checkout_selected_branch(),
-                _ => {}
+                _ => app.update_current_diff(),
             },
 
-            // Staging global
-            KeyCode::Char('a') if app.active_tab == Tab::Files => app.stage_all_files(),
+            KeyCode::Enter => match app.active_tab {
+                Tab::Branches => app.checkout_selected_branch(),
+                _ => app.update_current_diff(),
+            },
+
+            // Staging global o Stash Apply
+            KeyCode::Char('a') => match app.active_tab {
+                Tab::Files => app.stage_all_files(),
+                Tab::Stashes => {
+                    if let Some(st) = app.stashes.get(app.selected_stash) {
+                        let idx = st.index;
+                        match git::stash_apply(&app.cwd, idx) {
+                            Ok(_) => app.set_toast(&format!("Stash stash@{{{}}} aplicado correctamente.", idx), false),
+                            Err(e) => app.set_toast(&format!("Error al aplicar stash: {}", e), true),
+                        }
+                        app.refresh_all();
+                    }
+                }
+                _ => {}
+            },
             KeyCode::Char('u') if app.active_tab == Tab::Files => app.unstage_all_files(),
 
             // Descarte / Eliminación con confirmación
@@ -488,6 +510,10 @@ fn handle_key_event(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
                 _ => {}
             },
 
+            KeyCode::Char('s') if app.active_tab == Tab::Stashes => {
+                app.modal = ActiveModal::NewStash { message: String::new() };
+            }
+
             // Confirmación de cambios (Commit)
             KeyCode::Char('c') => {
                 app.modal = ActiveModal::CommitInput { text: String::new() };
@@ -502,8 +528,20 @@ fn handle_key_event(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
                 };
             }
 
-            // Operaciones remotas
-            KeyCode::Char('p') => app.git_pull(),
+            // Operaciones remotas o Pop de Stash
+            KeyCode::Char('p') => match app.active_tab {
+                Tab::Stashes => {
+                    if let Some(st) = app.stashes.get(app.selected_stash) {
+                        let idx = st.index;
+                        match git::stash_pop(&app.cwd, idx) {
+                            Ok(_) => app.set_toast(&format!("Stash stash@{{{}}} recuperado y eliminado (pop).", idx), false),
+                            Err(e) => app.set_toast(&format!("Error en stash pop: {}", e), true),
+                        }
+                        app.refresh_all();
+                    }
+                }
+                _ => app.git_pull(),
+            },
             KeyCode::Char('P') => {
                 if modifiers.contains(KeyModifiers::SHIFT) {
                     app.git_push(false);

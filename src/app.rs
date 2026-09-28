@@ -361,12 +361,15 @@ impl App {
     pub fn move_down(&mut self) {
         match self.active_tab {
             Tab::Files => {
-                if self.files_in_staged_view {
-                    if !self.staged_files.is_empty() && self.selected_staged + 1 < self.staged_files.len() {
-                        self.selected_staged += 1;
+                if !self.files_in_staged_view {
+                    if !self.unstaged_files.is_empty() && self.selected_unstaged + 1 < self.unstaged_files.len() {
+                        self.selected_unstaged += 1;
+                    } else if !self.staged_files.is_empty() {
+                        self.files_in_staged_view = true;
+                        self.selected_staged = 0;
                     }
-                } else if !self.unstaged_files.is_empty() && self.selected_unstaged + 1 < self.unstaged_files.len() {
-                    self.selected_unstaged += 1;
+                } else if !self.staged_files.is_empty() && self.selected_staged + 1 < self.staged_files.len() {
+                    self.selected_staged += 1;
                 }
             }
             Tab::Branches => {
@@ -404,6 +407,9 @@ impl App {
                 if self.files_in_staged_view {
                     if self.selected_staged > 0 {
                         self.selected_staged -= 1;
+                    } else if !self.unstaged_files.is_empty() {
+                        self.files_in_staged_view = false;
+                        self.selected_unstaged = self.unstaged_files.len().saturating_sub(1);
                     }
                 } else if self.selected_unstaged > 0 {
                     self.selected_unstaged -= 1;

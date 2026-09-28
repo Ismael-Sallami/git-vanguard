@@ -17,26 +17,29 @@ use ratatui::{
 /// Paleta de color curada para alto contraste y elegancia en terminales modernas.
 pub struct Palette;
 impl Palette {
-    pub const ACCENT: Color = Color::Cyan;
-    pub const SUCCESS: Color = Color::Green;
-    pub const WARNING: Color = Color::Yellow;
-    pub const DANGER: Color = Color::Red;
-    pub const MUTED: Color = Color::DarkGray;
-    pub const TEXT: Color = Color::White;
-    pub const HIGHLIGHT_BG: Color = Color::Rgb(30, 41, 59); // Slate oscuro
+    pub const ACCENT: Color = Color::Rgb(6, 182, 212); // Cyan 500 (Vibrante)
+    pub const SUCCESS: Color = Color::Rgb(34, 197, 94); // Emerald 500
+    pub const WARNING: Color = Color::Rgb(234, 179, 8); // Amber 500
+    pub const DANGER: Color = Color::Rgb(239, 68, 68);  // Rose 500
+    pub const MUTED: Color = Color::Rgb(100, 116, 139); // Slate 500 (Legible)
+    pub const TEXT: Color = Color::Rgb(248, 250, 252);  // Slate 50
+    pub const TEXT_DIM: Color = Color::Rgb(148, 163, 184); // Slate 400
+    pub const HIGHLIGHT_BG: Color = Color::Rgb(30, 41, 59); // Slate 800
+    pub const BORDER: Color = Color::Rgb(51, 65, 85);    // Slate 700
+    pub const BORDER_ACTIVE: Color = Color::Rgb(6, 182, 212); // Cyan 500
 }
 
 /// Dibuja la interfaz completa en el frame activo.
 pub fn draw(f: &mut Frame, app: &App) {
     let size = f.area();
 
-    // Layout principal: Barra superior, Contenido central (Columnas), Barra de estado inferior
+    // Layout principal: Barra superior (3), Contenido central (Columnas), Barra de atajos inferior (3)
     let main_chunks = Layout::default()
         .direction(Direction::Vertical)
         .constraints([
             Constraint::Length(3), // Cabecera & Tabs
             Constraint::Min(10),   // Paneles centrales
-            Constraint::Length(2), // Barra de estado / Shortcuts
+            Constraint::Length(3), // Barra de estado / Shortcuts contextuales (3 líneas para borde + texto)
         ])
         .split(size);
 
@@ -55,42 +58,65 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([
-            Constraint::Length(24), // Logo y versión
-            Constraint::Min(40),    // Pestañas
-            Constraint::Length(35), // Estado de repo / upstream
+            Constraint::Length(25), // Logo y versión
+            Constraint::Min(45),    // Pestañas
+            Constraint::Length(38), // Estado de repo / upstream
         ])
         .split(area);
 
     // Bloque 1: Brand / Logo
     let brand_spans = vec![
+        Span::styled(" GV ", Style::default().bg(Palette::ACCENT).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD)),
         Span::styled(" GIT", Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
-        Span::styled("VANGUARD", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
-        Span::styled(" v0.1 ", Style::default().fg(Palette::MUTED)),
+        Span::styled("VANGUARD ", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+        Span::styled("v0.1 ", Style::default().fg(Palette::MUTED)),
     ];
     let brand = Paragraph::new(Line::from(brand_spans))
-        .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded).border_style(Style::default().fg(Palette::MUTED)));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Palette::BORDER))
+                .title(" Motor "),
+        );
     f.render_widget(brand, header_chunks[0]);
 
-    // Bloque 2: Tabs horizontales
+    // Bloque 2: Tabs horizontales con Badge de Alto Contraste
     let mut tab_spans = Vec::new();
     for i in 0..6 {
         let tab = Tab::from_index(i);
         let is_active = app.active_tab == tab;
 
-        let style = if is_active {
-            Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD | Modifier::UNDERLINED)
+        if is_active {
+            tab_spans.push(Span::styled(
+                format!(" {} ", tab.title()),
+                Style::default()
+                    .bg(Palette::ACCENT)
+                    .fg(Color::Rgb(15, 23, 42))
+                    .add_modifier(Modifier::BOLD),
+            ));
         } else {
-            Style::default().fg(Palette::MUTED)
-        };
+            tab_spans.push(Span::styled(
+                format!(" {} ", tab.title()),
+                Style::default()
+                    .bg(Color::Rgb(24, 32, 47))
+                    .fg(Palette::TEXT_DIM),
+            ));
+        }
 
-        tab_spans.push(Span::styled(format!(" {} ", tab.title()), style));
         if i < 5 {
-            tab_spans.push(Span::styled("│", Style::default().fg(Palette::MUTED)));
+            tab_spans.push(Span::raw(" "));
         }
     }
     let tabs_widget = Paragraph::new(Line::from(tab_spans))
         .alignment(Alignment::Center)
-        .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded).border_style(Style::default().fg(Palette::MUTED)));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+                .title(format!(" Pestaña Activa: [{}] (Tab o 1-6 para alternar) ", app.active_tab.title())),
+        );
     f.render_widget(tabs_widget, header_chunks[1]);
 
     // Bloque 3: Resumen de Sincronización Remota
@@ -98,25 +124,30 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
     let sync_info = if let Some(ref ups) = app.overview.upstream {
         format!("{} ↑{} ↓{}", ups, app.overview.ahead, app.overview.behind)
     } else {
-        "Sin remoto vinculado".to_string()
+        "local".to_string()
     };
 
-    let status_color = if app.overview.is_clean {
-        Palette::SUCCESS
+    let status_badge = if app.overview.is_clean {
+        Span::styled(" LIMPIO ", Style::default().bg(Palette::SUCCESS).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
     } else {
-        Palette::WARNING
+        Span::styled(" CAMBIOS ", Style::default().bg(Palette::WARNING).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD))
     };
 
     let sync_spans = vec![
-        Span::styled(" * ", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
-        Span::styled(branch_name, Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
-        Span::styled("  ", Style::default()),
-        Span::styled(sync_info, Style::default().fg(status_color)),
         Span::raw(" "),
+        status_badge,
+        Span::styled(format!(" * {} ", branch_name), Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
+        Span::styled(format!("({}) ", sync_info), Style::default().fg(Palette::MUTED)),
     ];
     let sync_widget = Paragraph::new(Line::from(sync_spans))
         .alignment(Alignment::Right)
-        .block(Block::default().borders(Borders::ALL).border_type(BorderType::Rounded).border_style(Style::default().fg(Palette::MUTED)));
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(Palette::BORDER))
+                .title(" Repositorio "),
+        );
     f.render_widget(sync_widget, header_chunks[2]);
 }
 
@@ -169,23 +200,34 @@ fn render_files_panel(f: &mut Frame, app: &App, area: Rect) {
 
             let prefix = if is_selected { "▶ " } else { "  " };
             let style = if is_selected {
-                Style::default().fg(Palette::TEXT).bg(Palette::HIGHLIGHT_BG).add_modifier(Modifier::BOLD)
+                Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(Palette::TEXT)
             };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled(format!("[{}] ", icon), Style::default().fg(color)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+                Span::styled(format!("[{}] ", icon), Style::default().fg(color).add_modifier(Modifier::BOLD)),
                 Span::styled(&file.path, style),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
     let unstaged_border_color = if !app.files_in_staged_view {
-        Palette::ACCENT
+        Palette::BORDER_ACTIVE
     } else {
-        Palette::MUTED
+        Palette::BORDER
+    };
+    let unstaged_title = if !app.files_in_staged_view {
+        format!(" ● Cambios de Trabajo [Unstaged: {}] (Space: Stage, a: Todo) ", app.unstaged_files.len())
+    } else {
+        format!(" ○ Cambios de Trabajo [Unstaged: {}] ", app.unstaged_files.len())
     };
 
     let unstaged_widget = List::new(unstaged_items).block(
@@ -193,7 +235,7 @@ fn render_files_panel(f: &mut Frame, app: &App, area: Rect) {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(unstaged_border_color))
-            .title(format!(" Cambios de Trabajo [Unstaged: {}] ", app.unstaged_files.len())),
+            .title(unstaged_title),
     );
     f.render_widget(unstaged_widget, chunks[0]);
 
@@ -206,23 +248,34 @@ fn render_files_panel(f: &mut Frame, app: &App, area: Rect) {
             let is_selected = app.files_in_staged_view && idx == app.selected_staged;
             let prefix = if is_selected { "▶ " } else { "  " };
             let style = if is_selected {
-                Style::default().fg(Palette::TEXT).bg(Palette::HIGHLIGHT_BG).add_modifier(Modifier::BOLD)
+                Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(Palette::TEXT)
             };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::SUCCESS)),
-                Span::styled(format!("[{}] ", file.index_status), Style::default().fg(Palette::SUCCESS)),
+                Span::styled(prefix, Style::default().fg(Palette::SUCCESS).add_modifier(Modifier::BOLD)),
+                Span::styled(format!("[{}] ", file.index_status), Style::default().fg(Palette::SUCCESS).add_modifier(Modifier::BOLD)),
                 Span::styled(&file.path, style),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
     let staged_border_color = if app.files_in_staged_view {
         Palette::SUCCESS
     } else {
-        Palette::MUTED
+        Palette::BORDER
+    };
+    let staged_title = if app.files_in_staged_view {
+        format!(" ● Cambios Preparados [Staged: {}] (Space: Unstage, c: Commit) ", app.staged_files.len())
+    } else {
+        format!(" ○ Cambios Preparados [Staged: {}] ", app.staged_files.len())
     };
 
     let staged_widget = List::new(staged_items).block(
@@ -230,7 +283,7 @@ fn render_files_panel(f: &mut Frame, app: &App, area: Rect) {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(staged_border_color))
-            .title(format!(" Cambios Preparados [Staged: {}] ", app.staged_files.len())),
+            .title(staged_title),
     );
     f.render_widget(staged_widget, chunks[1]);
 }
@@ -262,13 +315,19 @@ fn render_branches_panel(f: &mut Frame, app: &App, area: Rect) {
                 String::new()
             };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
                 Span::styled(head_marker, Style::default().fg(Palette::SUCCESS).add_modifier(Modifier::BOLD)),
-                Span::styled(&b.name, Style::default().fg(branch_color).add_modifier(if b.is_head { Modifier::BOLD } else { Modifier::empty() })),
+                Span::styled(&b.name, Style::default().fg(branch_color).add_modifier(if b.is_head || is_selected { Modifier::BOLD } else { Modifier::empty() })),
                 Span::styled(sync_tag, Style::default().fg(Palette::WARNING)),
                 Span::styled(format!(" - {}", b.last_commit_msg), Style::default().fg(Palette::MUTED)),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
@@ -276,8 +335,8 @@ fn render_branches_panel(f: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" Ramas [Total: {}] (Space: Checkout, m: Merge, r: Rebase, z: Prune) ", app.branches.len())),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" ● Ramas Locales y Remotas [Total: {}] (Space: Checkout, m: Merge, r: Rebase) ", app.branches.len())),
     );
     f.render_widget(list, area);
 }
@@ -293,13 +352,19 @@ fn render_commits_panel(f: &mut Frame, app: &App, area: Rect) {
             let prefix = if is_selected { "▶ " } else { "  " };
             let head_icon = if c.is_head { "● " } else { "○ " };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
                 Span::styled(head_icon, Style::default().fg(if c.is_head { Palette::SUCCESS } else { Palette::MUTED })),
-                Span::styled(format!("{} ", c.short_hash), Style::default().fg(Palette::WARNING)),
+                Span::styled(format!("{} ", c.short_hash), Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD)),
                 Span::styled(&c.message, Style::default().fg(Palette::TEXT).add_modifier(if is_selected { Modifier::BOLD } else { Modifier::empty() })),
                 Span::styled(format!(" ({}, {})", c.author, c.date), Style::default().fg(Palette::MUTED)),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
@@ -307,8 +372,8 @@ fn render_commits_panel(f: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" Historial de Commits [Recientes: {}] ", app.commits.len())),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" ● Historial de Commits [Recientes: {}] (j/k: Navegar) ", app.commits.len())),
     );
     f.render_widget(list, area);
 }
@@ -323,17 +388,22 @@ fn render_worktrees_panel(f: &mut Frame, app: &App, area: Rect) {
             let is_selected = idx == app.selected_worktree;
             let prefix = if is_selected { "▶ " } else { "  " };
             let main_tag = if wt.is_main { " [Principal]" } else { "" };
-
             let locked_tag = if wt.is_locked { " [Bloqueado]" } else { "" };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("[WT] ", Style::default().fg(Palette::SUCCESS)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+                Span::styled("[WT] ", Style::default().fg(Palette::SUCCESS).add_modifier(Modifier::BOLD)),
                 Span::styled(&wt.branch, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
-                Span::styled(format!(" ({})", wt.path), Style::default().fg(Palette::MUTED)),
+                Span::styled(format!(" ({})", wt.path), Style::default().fg(Palette::TEXT_DIM)),
                 Span::styled(main_tag, Style::default().fg(Palette::WARNING)),
                 Span::styled(locked_tag, Style::default().fg(Palette::DANGER)),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
@@ -341,8 +411,8 @@ fn render_worktrees_panel(f: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" Worktrees Hub [Activos: {}] (n: Crear, d: Eliminar) ", app.worktrees.len())),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" ● Worktrees Hub [Activos: {}] (n: Crear, d: Eliminar) ", app.worktrees.len())),
     );
     f.render_widget(list, area);
 }
@@ -357,13 +427,19 @@ fn render_stashes_panel(f: &mut Frame, app: &App, area: Rect) {
             let is_selected = idx == app.selected_stash;
             let prefix = if is_selected { "▶ " } else { "  " };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("[STASH] ", Style::default().fg(Palette::WARNING)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+                Span::styled("[STASH] ", Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD)),
                 Span::styled(format!("[{}] ", st.name), Style::default().fg(Palette::WARNING)),
-                Span::styled(&st.message, Style::default().fg(Palette::TEXT)),
+                Span::styled(&st.message, Style::default().fg(Palette::TEXT).add_modifier(if is_selected { Modifier::BOLD } else { Modifier::empty() })),
                 Span::styled(format!(" ({})", st.date), Style::default().fg(Palette::MUTED)),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
@@ -371,8 +447,8 @@ fn render_stashes_panel(f: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" Stash & Shelves [Guardados: {}] (s: Guardar, p: Pop, a: Apply, d: Drop) ", app.stashes.len())),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" ● Stash & Shelves [Guardados: {}] (s: Guardar, p: Pop, a: Apply, d: Drop) ", app.stashes.len())),
     );
     f.render_widget(list, area);
 }
@@ -395,15 +471,21 @@ fn render_timemachine_panel(f: &mut Frame, app: &App, area: Rect) {
                 _ => Palette::TEXT,
             };
 
+            let row_style = if is_selected {
+                Style::default().bg(Palette::HIGHLIGHT_BG)
+            } else {
+                Style::default()
+            };
+
             ListItem::new(Line::from(vec![
-                Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("[LOG] ", Style::default().fg(Palette::WARNING)),
+                Span::styled(prefix, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+                Span::styled("[LOG] ", Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD)),
                 Span::styled(format!("{:<8} ", rf.selector), Style::default().fg(Palette::WARNING)),
                 Span::styled(format!("{:<10} ", rf.action), Style::default().fg(action_color).add_modifier(Modifier::BOLD)),
                 Span::styled(format!("{} ", rf.hash), Style::default().fg(Palette::MUTED)),
-                Span::styled(&rf.message, Style::default().fg(Palette::TEXT)),
+                Span::styled(&rf.message, Style::default().fg(Palette::TEXT).add_modifier(if is_selected { Modifier::BOLD } else { Modifier::empty() })),
                 Span::styled(format!(" ({})", rf.time_ago), Style::default().fg(Palette::MUTED)),
-            ]))
+            ])).style(row_style)
         })
         .collect();
 
@@ -411,8 +493,8 @@ fn render_timemachine_panel(f: &mut Frame, app: &App, area: Rect) {
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" Time Machine (Reflog) [Historial: {}] (U: Restaurar estado) ", app.reflogs.len())),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" ● Time Machine (Reflog) [Historial: {}] (U: Rebobinar Repositorio) ", app.reflogs.len())),
     );
     f.render_widget(list, area);
 }
@@ -422,88 +504,226 @@ fn render_diff_viewport(f: &mut Frame, app: &App, area: Rect) {
     let lines = app.diff_content.lines().skip(app.diff_scroll);
     let mut formatted_lines = Vec::new();
 
-    for (rel_idx, line) in lines.enumerate() {
-        let abs_line_num = app.diff_scroll + rel_idx + 1;
-        let line_gutter = format!("{:4} │ ", abs_line_num);
-
-        let (gutter_style, text_style) = if line.starts_with('+') && !line.starts_with("+++") {
-            (
-                Style::default().fg(Palette::SUCCESS),
-                Style::default().fg(Palette::SUCCESS).bg(Color::Rgb(6, 44, 25)),
-            )
-        } else if line.starts_with('-') && !line.starts_with("---") {
-            (
-                Style::default().fg(Palette::DANGER),
-                Style::default().fg(Palette::DANGER).bg(Color::Rgb(50, 15, 15)),
-            )
-        } else if line.starts_with("@@") {
-            (
-                Style::default().fg(Palette::WARNING),
-                Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD),
-            )
-        } else if line.starts_with("diff --git") || line.starts_with("commit ") {
-            (
-                Style::default().fg(Palette::ACCENT),
-                Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD),
-            )
-        } else {
-            (
-                Style::default().fg(Palette::MUTED),
-                Style::default().fg(Palette::TEXT),
-            )
-        };
-
+    if app.diff_content.trim().is_empty() {
+        formatted_lines.push(Line::from(""));
         formatted_lines.push(Line::from(vec![
-            Span::styled(line_gutter, gutter_style),
-            Span::styled(line, text_style),
+            Span::styled("   ", Style::default()),
+            Span::styled("[i] ", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
+            Span::styled("No hay cambios pendientes o diferencias seleccionadas en esta vista.", Style::default().fg(Palette::TEXT_DIM)),
         ]));
+        formatted_lines.push(Line::from(vec![
+            Span::styled("       ", Style::default()),
+            Span::styled("Selecciona un archivo modificado, commit, stash o entrada de reflog para inspeccionar.", Style::default().fg(Palette::MUTED)),
+        ]));
+    } else {
+        for (rel_idx, line) in lines.enumerate() {
+            let abs_line_num = app.diff_scroll + rel_idx + 1;
+            let line_gutter = format!("{:4} │ ", abs_line_num);
+
+            let (gutter_style, text_style) = if line.starts_with('+') && !line.starts_with("+++") {
+                (
+                    Style::default().fg(Palette::SUCCESS),
+                    Style::default().fg(Palette::SUCCESS).bg(Color::Rgb(6, 44, 25)),
+                )
+            } else if line.starts_with('-') && !line.starts_with("---") {
+                (
+                    Style::default().fg(Palette::DANGER),
+                    Style::default().fg(Palette::DANGER).bg(Color::Rgb(50, 15, 15)),
+                )
+            } else if line.starts_with("@@") {
+                (
+                    Style::default().fg(Palette::WARNING),
+                    Style::default().fg(Palette::WARNING).add_modifier(Modifier::BOLD),
+                )
+            } else if line.starts_with("diff --git") || line.starts_with("commit ") {
+                (
+                    Style::default().fg(Palette::ACCENT),
+                    Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD),
+                )
+            } else {
+                (
+                    Style::default().fg(Palette::MUTED),
+                    Style::default().fg(Palette::TEXT),
+                )
+            };
+
+            formatted_lines.push(Line::from(vec![
+                Span::styled(line_gutter, gutter_style),
+                Span::styled(line, text_style),
+            ]));
+        }
     }
+
+    let target_desc = match &app.current_target {
+        crate::git::DiffTarget::WorkingFile { path, staged } => {
+            if *staged {
+                format!("Preparado (Staged): {}", path)
+            } else {
+                format!("Sin Preparar (Unstaged): {}", path)
+            }
+        }
+        crate::git::DiffTarget::Commit(hash) => {
+            let short = if hash.len() > 8 { &hash[..8] } else { hash };
+            format!("Commit: {}", short)
+        }
+        crate::git::DiffTarget::Stash(idx) => format!("Stash: stash@{{{}}}", idx),
+        crate::git::DiffTarget::Reflog(sel) => format!("Reflog: {}", sel),
+        crate::git::DiffTarget::None => "Ninguno".to_string(),
+    };
+
+    let total_lines = app.diff_content.lines().count();
+    let scroll_info = if total_lines > 0 {
+        format!(" [Línea {}/{}]", app.diff_scroll + 1, total_lines)
+    } else {
+        String::new()
+    };
 
     let diff_widget = Paragraph::new(formatted_lines).wrap(Wrap { trim: false }).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::MUTED))
-            .title(" Inspección de Diferencias (J/K o Rueda de Ratón para scroll) "),
+            .border_style(Style::default().fg(Palette::BORDER))
+            .title(format!(" Inspección de Diferencias │ {}{} (J/K o Ratón) ", target_desc, scroll_info)),
     );
     f.render_widget(diff_widget, area);
 }
 
-/// Renderiza la barra inferior con atajos contextuales y mensajes informativos.
+/// Renderiza la barra inferior con atajos contextuales dinámicos por pestaña activa.
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
-    let text = if let Some((ref msg, is_error)) = app.status_toast {
-        let icon = if is_error { "✖ " } else { "✔ " };
-        let color = if is_error { Palette::DANGER } else { Palette::SUCCESS };
-        Line::from(vec![
-            Span::styled(icon, Style::default().fg(color).add_modifier(Modifier::BOLD)),
-            Span::styled(msg, Style::default().fg(color).add_modifier(Modifier::BOLD)),
-        ])
-    } else {
-        Line::from(vec![
-            Span::styled(" Tab: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Cambiar Panel │ "),
-            Span::styled("Space: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Stage/Checkout │ "),
-            Span::styled("c: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Commit │ "),
-            Span::styled("C: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Conv. Commit │ "),
-            Span::styled("p: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Pull │ "),
-            Span::styled("P: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Push │ "),
-            Span::styled("?: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Ayuda │ "),
-            Span::styled("q: ", Style::default().fg(Palette::ACCENT)),
-            Span::raw("Salir"),
-        ])
+    if let Some((ref msg, is_error)) = app.status_toast {
+        let (icon, badge_color) = if is_error {
+            (" ✖ ERROR ", Palette::DANGER)
+        } else {
+            (" ✔ ÉXITO ", Palette::SUCCESS)
+        };
+        let text = Line::from(vec![
+            Span::styled(icon, Style::default().bg(badge_color).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD)),
+            Span::raw(" "),
+            Span::styled(msg, Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
+            Span::styled("   (Cualquier acción actualizará este estado)", Style::default().fg(Palette::MUTED)),
+        ]);
+        let footer = Paragraph::new(text).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .border_style(Style::default().fg(if is_error { Palette::DANGER } else { Palette::SUCCESS }))
+                .title(" Notificación del Sistema "),
+        );
+        f.render_widget(footer, area);
+        return;
+    }
+
+    // Atajos contextuales enriquecidos según la pestaña activa
+    let (tab_label, shortcuts): (&str, Vec<(&str, &str)>) = match app.active_tab {
+        Tab::Files => (
+            "1. Archivos",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("Space", "Stage/Unstage"),
+                ("h/l o ←/→", "Alternar Panel"),
+                ("a", "Stage Todo"),
+                ("u", "Unstage Todo"),
+                ("c", "Commit"),
+                ("C", "Conv. Commit"),
+                ("d", "Descartar"),
+                ("?", "Ayuda"),
+                ("q", "Salir"),
+            ],
+        ),
+        Tab::Branches => (
+            "2. Ramas & Remotos",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("Space", "Checkout"),
+                ("n", "Nueva Rama"),
+                ("d", "Eliminar Rama"),
+                ("m", "Merge"),
+                ("r", "Rebase"),
+                ("z", "Zombie Pruner"),
+                ("p/P", "Pull/Push"),
+                ("f", "Fetch"),
+                ("q", "Salir"),
+            ],
+        ),
+        Tab::Commits => (
+            "3. Historial (DAG)",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("j/k", "Navegar"),
+                ("J/K", "Scroll Diff"),
+                ("p", "Pull"),
+                ("P", "Push"),
+                ("R", "Refrescar"),
+                ("?", "Ayuda"),
+                ("q", "Salir"),
+            ],
+        ),
+        Tab::Worktrees => (
+            "4. Worktrees Hub",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("n", "Crear Worktree"),
+                ("d", "Eliminar Worktree"),
+                ("Enter", "Inspeccionar HEAD"),
+                ("R", "Refrescar"),
+                ("?", "Ayuda"),
+                ("q", "Salir"),
+            ],
+        ),
+        Tab::Stashes => (
+            "5. Stash & Shelves",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("s", "Guardar Stash"),
+                ("p", "Pop"),
+                ("a", "Apply"),
+                ("d", "Drop"),
+                ("Enter", "Inspeccionar"),
+                ("?", "Ayuda"),
+                ("q", "Salir"),
+            ],
+        ),
+        Tab::TimeMachine => (
+            "6. Time Machine",
+            vec![
+                ("Tab", "Siguiente Pestaña"),
+                ("U", "Rebobinar Repositorio"),
+                ("j/k", "Navegar Reflog"),
+                ("J/K", "Scroll Diff"),
+                ("R", "Refrescar"),
+                ("?", "Ayuda"),
+                ("q", "Salir"),
+            ],
+        ),
     };
 
-    let footer = Paragraph::new(text).block(
+    let mut spans = Vec::new();
+    spans.push(Span::styled(
+        format!(" [{}] ", tab_label),
+        Style::default().bg(Palette::ACCENT).fg(Color::Rgb(15, 23, 42)).add_modifier(Modifier::BOLD),
+    ));
+    spans.push(Span::raw(" "));
+
+    for (i, (key, desc)) in shortcuts.iter().enumerate() {
+        spans.push(Span::styled(
+            format!("[{}]", key),
+            Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD),
+        ));
+        spans.push(Span::styled(
+            format!(" {} ", desc),
+            Style::default().fg(Palette::TEXT),
+        ));
+        if i + 1 < shortcuts.len() {
+            spans.push(Span::styled("│ ", Style::default().fg(Palette::MUTED)));
+        }
+    }
+
+    let footer = Paragraph::new(Line::from(spans)).block(
         Block::default()
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
-            .border_style(Style::default().fg(Palette::MUTED)),
+            .border_style(Style::default().fg(Palette::BORDER_ACTIVE))
+            .title(format!(" Atajos Contextuales [Pestaña {}] ", tab_label)),
     );
     f.render_widget(footer, area);
 }
