@@ -1,0 +1,26 @@
+[package]
+name = "git-vanguard"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ismael Sallami Moreno <ismEngineer23@gmail.com>"]
+description = "Controlador Git TUI de alto rendimiento para Linux con Time Machine, Sentinel Secret Shield y gestión avanzada de Worktrees."
+license = "MIT"
+repository = "https://github.com/Ismael-Sallami/git-vanguard"
+keywords = ["git", "tui", "linux", "ratatui", "vanguard"]
+
+[[bin]]
+name = "vanguard"
+path = "src/main.rs"
+
+[dependencies]
+ratatui = { version = "0.29", default-features = false, features = ["crossterm"] }
+crossterm = "0.28"
+chrono = "0.4"
+regex = "1.10"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true
