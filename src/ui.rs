@@ -63,8 +63,7 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
 
     // Bloque 1: Brand / Logo
     let brand_spans = vec![
-        Span::styled(" 󰊢 ", Style::default().fg(Palette::ACCENT)),
-        Span::styled("GIT", Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
+        Span::styled(" GIT", Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
         Span::styled("VANGUARD", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
         Span::styled(" v0.1 ", Style::default().fg(Palette::MUTED)),
     ];
@@ -109,7 +108,7 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
     };
 
     let sync_spans = vec![
-        Span::styled("  ", Style::default().fg(Palette::ACCENT)),
+        Span::styled(" * ", Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
         Span::styled(branch_name, Style::default().fg(Palette::TEXT).add_modifier(Modifier::BOLD)),
         Span::styled("  ", Style::default()),
         Span::styled(sync_info, Style::default().fg(status_color)),
@@ -329,7 +328,7 @@ fn render_worktrees_panel(f: &mut Frame, app: &App, area: Rect) {
 
             ListItem::new(Line::from(vec![
                 Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("🌿 ", Style::default().fg(Palette::SUCCESS)),
+                Span::styled("[WT] ", Style::default().fg(Palette::SUCCESS)),
                 Span::styled(&wt.branch, Style::default().fg(Palette::ACCENT).add_modifier(Modifier::BOLD)),
                 Span::styled(format!(" ({})", wt.path), Style::default().fg(Palette::MUTED)),
                 Span::styled(main_tag, Style::default().fg(Palette::WARNING)),
@@ -360,7 +359,7 @@ fn render_stashes_panel(f: &mut Frame, app: &App, area: Rect) {
 
             ListItem::new(Line::from(vec![
                 Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("📦 ", Style::default().fg(Palette::WARNING)),
+                Span::styled("[STASH] ", Style::default().fg(Palette::WARNING)),
                 Span::styled(format!("[{}] ", st.name), Style::default().fg(Palette::WARNING)),
                 Span::styled(&st.message, Style::default().fg(Palette::TEXT)),
                 Span::styled(format!(" ({})", st.date), Style::default().fg(Palette::MUTED)),
@@ -398,7 +397,7 @@ fn render_timemachine_panel(f: &mut Frame, app: &App, area: Rect) {
 
             ListItem::new(Line::from(vec![
                 Span::styled(prefix, Style::default().fg(Palette::ACCENT)),
-                Span::styled("⏳ ", Style::default().fg(Palette::WARNING)),
+                Span::styled("[LOG] ", Style::default().fg(Palette::WARNING)),
                 Span::styled(format!("{:<8} ", rf.selector), Style::default().fg(Palette::WARNING)),
                 Span::styled(format!("{:<10} ", rf.action), Style::default().fg(action_color).add_modifier(Modifier::BOLD)),
                 Span::styled(format!("{} ", rf.hash), Style::default().fg(Palette::MUTED)),
@@ -413,7 +412,7 @@ fn render_timemachine_panel(f: &mut Frame, app: &App, area: Rect) {
             .borders(Borders::ALL)
             .border_type(BorderType::Rounded)
             .border_style(Style::default().fg(Palette::ACCENT))
-            .title(format!(" ⏳ Time Machine (Reflog) [Historial: {}] (U: Restaurar estado) ", app.reflogs.len())),
+            .title(format!(" Time Machine (Reflog) [Historial: {}] (U: Restaurar estado) ", app.reflogs.len())),
     );
     f.render_widget(list, area);
 }
@@ -632,7 +631,7 @@ fn render_modal_overlay(f: &mut Frame, app: &App, screen: Rect) {
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
                 .border_style(Style::default().fg(Palette::DANGER))
-                .title(" 🛡️ SENTINEL SHIELD: ALERTA DE SEGURIDAD PRE-COMMIT ");
+                .title(" SENTINEL SHIELD: ALERTA DE SEGURIDAD PRE-COMMIT ");
 
             let mut lines = vec![
                 Line::from(Span::styled("Se han detectado posibles credenciales, claves criptográficas o tokens en los cambios:", Style::default().fg(Palette::DANGER).add_modifier(Modifier::BOLD))),

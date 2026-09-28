@@ -1,4 +1,4 @@
-# GitVanguard 󰊢
+# GitVanguard
 
 [![Licencia MIT](https://img.shields.io/badge/licencia-MIT-blue.svg)](LICENSE)
 [![Plataforma](https://img.shields.io/badge/plataforma-Linux-orange.svg)](https://kernel.org)
@@ -11,7 +11,7 @@ Nace con el propósito de resolver las limitaciones estructurales de herramienta
 
 ```
 ╭────────────────────────────────────────────────────────────────────────────────────────────────────────╮
-│ 󰊢 GITVANGUARD v0.1 │ 1. Archivos │ 2. Ramas │ 3. Historial │ 4. Worktrees │ 5. Stash │ 6. Time Machine │
+│ GITVANGUARD v0.1   │ 1. Archivos │ 2. Ramas │ 3. Historial │ 4. Worktrees │ 5. Stash │ 6. Time Machine │
 ├──────────────────────────────────────────┬─────────────────────────────────────────────────────────────┤
 │ Cambios de Trabajo [Unstaged: 2]         │ Inspección de Diferencias                                   │
 │ ▶ [M] src/main.rs                        │    1 │ diff --git a/src/main.rs b/src/main.rs                  │
@@ -26,9 +26,9 @@ Nace con el propósito de resolver las limitaciones estructurales de herramienta
 
 ---
 
-## ⚡ Innovaciones Fundamentales
+## Innovaciones Fundamentales
 
-### 1. 🛡️ Sentinel Shield: Escudo Anti-Fugas Pre-Commit
+### 1. Sentinel Shield: Escudo Anti-Fugas Pre-Commit
 A diferencia de otros clientes TUI que permiten commitear código ciegamente, GitVanguard incorpora un analizador estático en tiempo real sobre los cambios preparados (`staged`). Detecta e intercepta automáticamente:
 - Claves de API (OpenAI, AWS Access Keys, Google Cloud, Stripe).
 - Tokens personales de GitHub (`ghp_...`, `github_pat_...`) y Slack (`xoxb-...`).
@@ -37,32 +37,32 @@ A diferencia de otros clientes TUI que permiten commitear código ciegamente, Gi
 
 Si se detecta un patrón de riesgo, GitVanguard bloquea preventivamente el commit y muestra un panel de auditoría indicando archivo, línea exacta y extracto ofuscado.
 
-### 2. ⏳ Time Machine: Navegador Visual de Reflog con Undo en 1 Tecla
+### 2. Time Machine: Navegador Visual de Reflog con Undo en 1 Tecla
 El `reflog` de Git es el salvavidas definitivo ante errores, pero su inspección mediante CLI es engorrosa. Time Machine expone cada salto temporal (`checkout`, `commit`, `rebase`, `reset`, `merge`) con:
 - Fecha relativa legible.
 - Resumen de la acción ejecutada.
 - Diff contextual instantáneo en el viewport contiguo.
 - **Restauración instantánea con tecla `U`**: rebobina el repositorio al instante histórico exacto con confirmación protegida.
 
-### 3. 🌿 Hub de Mando para Git Worktrees
+### 3. Hub de Mando para Git Worktrees
 Los árboles de trabajo vinculados (*worktrees*) son el estándar de la ingeniería moderna para trabajar en ramas paralelas sin perder el estado del directorio de trabajo. GitVanguard ofrece un panel dedicado para:
 - Visualizar todos los worktrees activos y sus ramas asociadas.
 - Crear nuevos worktrees vinculados en un solo atajo (`n`).
 - Desvincular y limpiar worktrees obsoletos (`d`).
 
-### 4. 📝 Asistente Semántico Conventional Commits
+### 4. Asistente Semántico Conventional Commits
 Un asistente modal paso a paso para estandarizar el historial de versiones según la especificación *Conventional Commits*:
 - Selector rápido de tipo: `feat`, `fix`, `refactor`, `perf`, `docs`, `style`, `test`, `chore`, `ci`.
 - Ámbito opcional: `(auth)`, `(ui)`, `(engine)`.
 - Indicador visual de *Breaking Change* (`!`).
 - Contador de caracteres con aviso dinámico de la regla de oro 50/72 caracteres.
 
-### 5. 🧹 Zombie Branch Pruner
+### 5. Zombie Branch Pruner
 Identifica de forma automática e instantánea las ramas locales cuyos commits ya han sido completamente fusionados en la rama principal (`main`/`master`), permitiendo su depuración en lote de forma segura mediante confirmación.
 
 ---
 
-## 🚀 Instalación en Linux
+## Instalación en Linux
 
 GitVanguard se distribuye mediante un script instalador universal que detecta la arquitectura del procesador (`x86_64` o `aarch64`), configura los permisos y genera los alias necesarios:
 
@@ -88,7 +88,7 @@ ln -sf ~/.local/bin/vanguard ~/.local/bin/gv
 
 ---
 
-## ⌨️ Guía de Atajos de Teclado
+## Guía de Atajos de Teclado
 
 ### Navegación Global
 | Atajo | Acción |
@@ -135,7 +135,7 @@ ln -sf ~/.local/bin/vanguard ~/.local/bin/gv
 
 ---
 
-## 🛠️ Arquitectura Técnica
+## Arquitectura Técnica
 
 ```
                        ┌───────────────────────────────┐
@@ -159,7 +159,7 @@ ln -sf ~/.local/bin/vanguard ~/.local/bin/gv
 
 ---
 
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la [Licencia MIT](LICENSE).
 

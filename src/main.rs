@@ -27,7 +27,7 @@ use std::panic;
 use std::time::Duration;
 
 fn print_help() {
-    println!("\x1b[1;36m󰊢 GitVanguard v0.1.0\x1b[0m - Controlador Git TUI de Alto Rendimiento para Linux");
+    println!("\x1b[1;36mGitVanguard v0.1.0\x1b[0m - Controlador Git TUI de Alto Rendimiento para Linux");
     println!("Desarrollado por Ismael Sallami Moreno <ismEngineer23@gmail.com>\n");
     println!("\x1b[1mMODO DE USO:\x1b[0m");
     println!("    vanguard [OPCIONES] [RUTA]\n");
@@ -86,7 +86,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 2. Verificación de Binario Git y Repositorio Local
     // --------------------------------------------------------------------------
     if !git::is_git_repository(&target_dir) {
-        eprintln!("\x1b[1;33m󰊢 GitVanguard:\x1b[0m");
+        eprintln!("\x1b[1;33m[GitVanguard]\x1b[0m");
         eprintln!("El directorio especificado no es un repositorio Git válido.");
         eprintln!("Ruta inspeccionada: {}", target_dir);
         eprintln!("Por favor, sitúate en un proyecto inicializado con 'git init' o 'git clone'.");
@@ -95,7 +95,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Modo CLI: sólo escaneo de seguridad Sentinel
     if args.iter().any(|a| a == "--scan-only") {
-        println!("\x1b[1;36m󰊢 Ejecutando Sentinel Shield en {}\x1b[0m...", target_dir);
+        println!("\x1b[1;36m[GitVanguard] Ejecutando Sentinel Shield en {}\x1b[0m...", target_dir);
         let diff = git::run_git_cmd(&target_dir, &["diff", "--cached", "--color=never"]).unwrap_or_default();
         let findings = sentinel::scan_diff(&diff);
         if findings.is_empty() {
@@ -545,7 +545,7 @@ fn handle_key_event(app: &mut App, code: KeyCode, modifiers: KeyModifiers) {
                 if let Some(rf) = app.reflogs.get(app.selected_reflog) {
                     let sel = rf.selector.clone();
                     app.modal = ActiveModal::Confirm {
-                        title: "⏳ Time Machine: Restaurar Repositorio".to_string(),
+                        title: "Time Machine: Restaurar Repositorio".to_string(),
                         message: format!(
                             "¿Confirmas restaurar el repositorio al estado histórico '{}' ({})?\nTodos los archivos volverán exactamente a ese instante temporal.",
                             sel, rf.hash
